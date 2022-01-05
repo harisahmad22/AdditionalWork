@@ -1,0 +1,6 @@
+3 pay overdue MasterCard bill 
+3 high 
+2 do laundry 
+2 buy groceries 
+2 medium 
+1 low 

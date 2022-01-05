@@ -1,0 +1,6 @@
+3 finish COMP 1633 assignment 1
+3 pay overdue MasterCard bill
+2 do laundry
+2 mow lawn
+2 buy groceries
+1 make dentist appointment

@@ -1,0 +1,1823 @@
+Script started on 2021-02-27 22:48:52-07:00
+bash: /opt/rh/rh-mysql56/enable: No such file or directory
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> k[Kls -al
+total 64
+drwxr-xr-x 2 hahma485 students.pg   168 Feb 27 22:48 [0m[01;34m.[0m
+drwxr-xr-x 3 hahma485 students.pg   275 Feb 27 22:03 [01;34m..[0m
+-rw-r--r-- 1 hahma485 students.pg  4454 Feb 27 21:25 ioutil.cpp
+-rw-r--r-- 1 hahma485 students.pg  4254 Feb 26 23:46 ioutil.h
+-rw-r--r-- 1 hahma485 students.pg   129 Feb 27 22:46 list2.txt
+-rw-r--r-- 1 hahma485 students.pg   780 Feb 27 21:23 makefile
+-rw-r--r-- 1 hahma485 students.pg  3569 Feb 26 23:54 test_todo.cpp
+-rw-r--r-- 1 hahma485 students.pg 17641 Feb 27 22:42 todo.cpp
+-rw-r--r-- 1 hahma485 students.pg 11516 Feb 27 22:05 todo_list.cpp
+-rw-r--r-- 1 hahma485 students.pg   956 Feb 26 23:45 todo_list.h
+-rw-r--r-- 1 hahma485 students.pg     0 Feb 27 22:48 typescript
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat todo.cpp
+/********************************************************************************                                                    
+Name:        Haris Ahmad                                                                                                                 
+E-mail:      hahma485@mtroyal.ca
+Course:      COMP 1633 - 001                                                                                                                                                  
+Assignment:  2                                                                                                                                                              
+Due Date:    February 25th, 2021                                                                                                                                              
+Instructor:  Paul Pospisil                                                                                                                                                    
+Source File: todo.cpp                                                                                                                                                         
+
+=================================================================================                                                                        
+Purpose:                                                                                                                                                                     
+
+  To take a user inputted todo list and perform a series of possibilities to that
+  list including adding, removing, or updating items.                                                                                                                        
+
+
+Details:                                                                                                                                                                      
+
+  Input - The user will be prompted to input a file which will contain the items
+          of a todo list with a corresponding number next to them which
+          determines each specific items priority level.
+
+        - A menu choice will then be available for the user if the file is opened
+          succesfully and the user will be able to perform multiple tasks on the
+          todo list from there on.
+
+  Output - The program will output the finalized to do list to a file based on 
+           the users input.
+
+
+Assumptions & Limitations:
+
+  - The file inputted by the user will be ranked from highest to lowest (3 to 1)
+  - There will be no duplicate items in the to do list
+  - There will only be valid priority levels in the todo list (not greater than
+    3 or less than 1)
+
+  - The user must input item descriptions between 1-30 characters
+  - The file name must be between 1-30 characters
+********************************************************************************/
+#include "ioutil.h"
+#include "todo_list.h"
+
+void menu(To_Do_Item_Ptr &head);
+
+void process_display_items(To_Do_Item_Ptr &head);
+void process_add_item(To_Do_Item_Ptr &head, char str_choice[]);
+void process_remove_item(To_Do_Item_Ptr &head, char str_choice[]);
+void process_update_item(To_Do_Item_Ptr &head, char str_choice[]);
+void process_quit(To_Do_Item_Ptr &head);
+
+int main()
+{
+    char prompt[MAX_DESCRIPTION + 1] = "Please Enter Filename: ";
+    char str[MAX_LENGTH + 1];
+    bool eof;
+    
+    ifstream input;
+    ofstream output;
+
+    To_Do_Item_Ptr head = NULL;
+    
+    eof = false;
+    
+    readString (prompt, str, MAX_LENGTH, 0, eof);
+
+    if (eof)
+    {
+	cout << endl << endl;
+	cout << "***  EXITING PROGRAM  ***";
+	cout << endl << endl;
+    }
+    else if (strlen(str) == 0)
+    {
+	cout << endl << endl;
+	cout << "***  NO FILE NAME ENTERED  ***";
+	cout << endl;
+	cout << "***  CREATING A NEW LIST  ***";
+	cout << endl << endl;
+
+	menu(head);
+    }
+    else if (strlen(str) >= MIN_LENGTH && strlen(str) <= MAX_LENGTH)
+    {
+	input.open(str);
+	
+	if (input.fail())
+	{
+	    cout << endl << endl;
+	    cout << "***  COULD NOT OPEN FILE  ***";
+	    cout << endl << endl;
+	}
+	else
+	{
+	    cout << "Opening File: " << str << endl << endl;
+
+	    load (input, head);
+
+	    input.close();
+	    
+	    menu(head);
+	}
+    }
+
+    return 0;
+}
+
+
+/********************************************************************************
+ * Function:  menu
+
+ * Purpose:   provide the user with a menu that lists the different operations
+              that can be performed on the inputted todo list.
+
+ * Input:     head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Output:    head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Return:    Nothing.
+
+ * Details:   The function accepts exactly one valid character and will call the
+              operation which corresponds to the character that was entered.
+ *******************************************************************************/
+void menu(To_Do_Item_Ptr &head)
+{
+    char prompt [MAX_DESCRIPTION + 1] = "choice: ";
+    char str_choice [MIN_LENGTH + 1];
+    bool eof;
+    
+    cout << endl;
+    cout << "To-Do List Manager: " << endl << endl;
+    cout << "d) display list" << endl;
+    cout << "a) add item" << endl;
+    cout << "r) remove item" << endl;
+    cout << "u) update item priority" << endl;
+    cout << "q) quit" << endl << endl;
+
+    readString(prompt, str_choice, MAX_LENGTH, MIN_LENGTH, eof);
+
+    if (strlen(str_choice) == 1)
+    {
+	while (str_choice[0] != 'q')
+	{
+	    switch (str_choice[0])
+	    {
+	    case 'd':
+		cout << "you chose display!" << endl << endl;
+		process_display_items (head);
+		
+		break;
+		
+	    case 'a':
+		cout << "you chose add item!" << endl << endl;
+		process_add_item (head, str_choice);
+		
+		break;
+		
+	    case 'r':
+		cout << "you chose remove item!" << endl << endl;
+		process_remove_item (head, str_choice);
+		
+		break;
+		
+	    case 'u':
+		cout << "you chose update items!" << endl << endl;
+		process_update_item (head, str_choice);
+		
+		break;
+		
+	    default:
+		cout << "You chose an invalid choice, ";
+		cout << "please select a valid entry - \n\n";
+		
+		break;
+	    }
+	    char prompt [] = "Enter new choice: ";
+	    readString(prompt, str_choice, MAX_LENGTH, MIN_LENGTH, eof);
+	}
+    }
+    else
+    {
+	while (str_choice[0] != 'q')
+	{
+	    cout << "You chose an invalid choice, ";
+	    cout << "please select a valid entry - \n\n";
+	    cout << "Enter new choice: ";
+	    char prompt [] = "Enter new choice: ";
+	    readString(prompt, str_choice, MAX_LENGTH, MIN_LENGTH, eof);
+	}
+    }
+    
+    switch (str_choice[0])
+    {
+    case 'q':
+	process_quit(head);
+	
+	return;
+    }
+    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  process_display_items
+
+ * Purpose:   To display the items of the todo list to the user
+
+ * Input:     head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Output:    head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Return:    Nothing. 
+
+ * Details:   Calls upon the display_list function to display to the user.
+
+ *******************************************************************************/
+void process_display_items(To_Do_Item_Ptr &head)
+{
+    display_list (head, cout);
+    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  process_add_item
+
+ * Purpose:   To arrange the new item from the add_item function into its correct
+              position based on its priority
+
+ * Input:     str_choice - A character which determines which operation the
+                           user wants to perform.
+              head       - A pointer which will either be null or a reference to
+                           the first node in the linked list.
+
+ * Output:    head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Return:    Nothing. 
+
+ * Details:   Takes in the item description using readString and then sorts the
+              item in the todo_list based on what the user selected.
+
+              Provides the user with prompts for their entry on the item's
+              desccription and item's priority level in the todo list.
+
+ *******************************************************************************/
+void process_add_item(To_Do_Item_Ptr &head, char str_choice[])
+{
+    To_Do_Item_Ptr add_item = NULL;
+    
+    char prompt1[MAX_DESCRIPTION + 1] = "Describe new item (1-60 chars): ";
+    char prompt2[MAX_DESCRIPTION + 1] = "Enter priority level (h/m/l): ";
+
+    char str_description[MAX_DESCRIPTION + 1];
+    char str_priority_level[PRIORITY + 1];
+    bool eof;
+    bool invalid_selection = true;
+    int priority;
+
+    readString(prompt1, str_description, MAX_DESCRIPTION, MIN_DESCRIPTION, eof);
+    
+    if (eof)
+    {
+	str_choice[0] = 'q';
+
+	return;
+    }
+    else
+    {
+	readString(prompt2, str_priority_level, PRIORITY, PRIORITY, eof);	    
+	
+	while (invalid_selection == true)
+	{	    
+	    if (eof)
+	    {	    
+		str_choice[0] = 'q';
+		
+		return;
+	    }
+	    else
+	    {		
+		switch (str_priority_level[0])
+		{
+		case 'h':
+		{
+		    priority = 3;
+		    
+		    add_item = create_node (str_description, priority);		    
+		    insert_item (head, add_item);		    		    
+		    cout << endl << endl;
+		    
+		    invalid_selection = false;
+			
+		    break;
+		}
+		
+		case 'm':
+		{
+		    priority = 2;
+
+		    add_item = create_node (str_description, priority);	    
+		    insert_item (head, add_item);		    
+		    cout << endl << endl;
+		    
+		    invalid_selection = false;
+		    
+		    break;
+		}   
+
+		case 'l':
+		{
+		    priority = 1;
+
+		    add_item = create_node (str_description, priority);		    
+		    insert_item (head, add_item);		    
+		    cout << endl << endl;
+		    
+		    invalid_selection = false;
+		    
+		    break;
+		}   
+
+		default:
+		{
+		    cout << endl << endl;
+		    cout << "*** Invalid priority level selected, ";
+		    cout << "please re-enter a valid entry ***";
+		    cout << endl << endl;
+		    readString (prompt2, str_priority_level, PRIORITY, PRIORITY, eof);			    		    
+		    
+		    break;
+		}
+		}
+	    }
+	}
+    }
+
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  process_remove_item
+
+ * Purpose:   To remove an item from the todo list
+
+ * Input:     head       - A pointer which will either be null or a reference to 
+                           the first node in the linked list.
+              str_choice - A character which determines which operation the
+                           user wants to perform.
+
+ * Output:    head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Return:    Nothing. 
+
+ * Details:   Reads the user input using readString and then searches for the
+              item in the todo list that the user wants to remove.
+
+ *******************************************************************************/
+void process_remove_item(To_Do_Item_Ptr &head, char str_choice[])
+{
+    To_Do_Item_Ptr delete_item = NULL;
+
+    char prompt1[MAX_LENGTH + 1] = "Enter item number: ";
+    char prompt2 [MAX_LENGTH + 1] = "(y/n): ";
+     
+    int position = 0;
+    
+    bool eof;
+    bool match;
+    bool yes_no;
+
+    position = readInt (prompt1, eof);
+
+    if (eof)
+    {
+	str_choice[0] = 'q';
+
+	return;
+    }
+    else
+    {
+	search(head, position, delete_item, match);
+	
+	while (!match && !eof)
+	{
+	    cout << endl;
+	    cout << "*** No item found in that position  ***";
+	    cout << endl;
+
+	    position = readInt (prompt1, eof);
+	    search (head, position, delete_item, match);
+	}
+
+	if (eof)
+	{
+	    str_choice [0] = 'q';
+
+	    return;
+	}        
+	else
+	{
+	    if (strlen(delete_item->description) > 0)
+	    {
+		cout << "Remove item " << '"' << delete_item->description << '"';
+		cout << ' ';
+		
+		yes_no = readBool (prompt2, eof);
+		
+		cout << endl << endl;
+		
+		if (yes_no == true)
+		{
+		    remove_item (head, delete_item);
+		}
+	    }
+	    else
+	    {
+		cout << "***  No item found in that position  ***";
+		cout << endl << endl;
+	    }
+	}
+    }
+    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  process_update_item
+
+ * Purpose:   To update an item's priority on the todo list 
+
+ * Input:     head       - A pointer which will either be null or a reference to 
+                           the first node in the linked list.
+              str_choice - A character which determines which operation the
+                           user wants to perform.
+
+ * Output:    head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Return:    Nothing. 
+
+ * Details:   Takes in 3 input values from the user asking what item they'd like
+              to update, if that is the correct value, and the priority level
+              you'd like to update it to.
+
+              
+
+ *******************************************************************************/
+void process_update_item(To_Do_Item_Ptr &head, char str_choice [])
+{
+    To_Do_Item_Ptr update_item = NULL;    
+    To_Do_Item_Ptr selected_item = NULL;
+    
+    int priority;
+    int position;
+    
+    char prompt1 [] = "Enter item number: " ;
+    char prompt2 [] = "(y/n): ";
+    char prompt3 [] = "Enter priority level (h/m/l): ";
+    char str_priority [PRIORITY + 1];
+
+    bool yes_no = false;
+    bool found = false;
+    bool eof = false;
+    bool invalid = true;
+
+    if (head == NULL)
+    {
+	cout << endl << "The list is empty" << endl;
+    }
+    else
+    {
+	position = readInt (prompt1, eof);
+
+	if (eof)
+	{
+	    str_choice[0] = 'q';
+
+	    return;
+	}
+	else
+	{
+	    search (head, position, selected_item, found);
+
+	    while (!found && !eof)
+	    {
+		    cout << endl << "Invalid input, please re-enter" << endl;
+		    position = readInt (prompt1, eof);
+		    search (head, position, selected_item, found);	
+	    }	    
+	    if (eof)    
+	    {
+		str_choice [0] = 'q';
+
+		return;
+	    }
+	    else
+	    {
+		cout << "Reprioritize " << '"' << selected_item->description;
+		cout << '"' << ' ';
+
+		yes_no = readBool (prompt2, eof);
+
+		if (eof)
+		{
+		    str_choice[0] = 'q';
+
+		    return;
+		}
+		else
+		{
+		    while (invalid == true)
+		    {
+			if (eof)
+			{
+			    str_choice [0] = 'q';
+
+			    invalid = false;
+			    
+			    return;
+			}
+			else if(yes_no == true)
+			{
+			    readString (prompt3, str_priority, PRIORITY,
+					PRIORITY, eof);
+			    
+			    switch (str_priority[0])
+			    {
+			    case 'h':				
+				priority = 3;
+				update_item = create_node
+				    (selected_item->description, priority);				
+				remove_item (head, selected_item);
+				insert_item (head, update_item);
+				
+				cout << endl << endl;
+				invalid = false;
+				
+				break;
+				
+			    case 'm':
+				priority = 2;
+				update_item = create_node
+				    (selected_item->description, priority);
+				remove_item (head, selected_item);
+				insert_item (head, update_item);
+				
+				cout << endl << endl;
+				invalid = false;
+
+				break;
+			    
+			    case 'l':
+				priority = 1;
+				update_item = create_node
+				    (selected_item->description, priority);
+				remove_item (head, selected_item);
+				insert_item (head, update_item);
+				
+				cout << endl << endl;
+				invalid = false;
+
+				break;
+
+			    default:
+				cout << endl << endl;
+				cout << "*** Invalid priority level selected, ";
+				cout << "please re-enter a valid entry ***";
+				cout << endl << endl;
+				readString
+				    (prompt3, str_priority,
+				     PRIORITY, PRIORITY, eof);			    		    
+								
+				break;				
+			    }
+			}
+			else if (yes_no == false)
+			{
+			    str_choice[0] = 'q';
+
+			    cout << endl << endl;
+			    
+			    return;
+			}
+		    }
+		}
+	    }
+	}
+    }
+
+
+	    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  process_quit
+
+ * Purpose:   To quit the program but prompt the user to input an output file
+              before the program exits.
+
+ * Input:     head- A pointer which will either be null or a reference to 
+                    the first node in the linked list.
+
+ * Output:    head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Return:    Nothing. 
+
+ * Details:   Provides the user with the prompts to enter an output file and
+              then writes down the todo list items onto the output file by
+              calling other upon other functions.
+
+ *******************************************************************************/
+void process_quit (To_Do_Item_Ptr &head)
+{
+    char prompt []
+	= "Enter the name of an output file (1-30 characters inclusive): ";
+    char str_file [MAX_LENGTH + 1];
+    bool eof;
+    ofstream output;
+
+    cout << endl << "***  QUITTING PROGRAM  ***" << endl << endl;
+    
+    readString (prompt, str_file, MAX_LENGTH, MIN_LENGTH, eof);
+
+    cout << endl;
+    
+    while (eof)
+    {
+	cout << endl << "Invalid file name inputted, ";
+	cout << "please enter a valid filename" << endl;
+
+	readString (prompt, str_file, MAX_LENGTH, MIN_LENGTH, eof);
+
+	cout << endl;
+    }
+
+    output.open (str_file);
+
+    if (output.fail())
+    {
+	cout << endl << "File could not be opened" << endl;
+    }
+    else
+    {
+	write (output, head);
+	output.close();
+	destroy_list (head);
+    }
+	
+    return;
+}
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat todo.cpp[K[K[K[K_list.h
+#ifndef TODO_LIST_H
+#define TODO_LIST_H
+#include <iostream>
+#include <cstring>
+#include <fstream>
+#include <istream>
+#include <ostream>
+#include "ioutil.h"
+
+using namespace std;
+
+const int MAX_DESCRIPTION = 60;
+const int MIN_DESCRIPTION = 1;
+const int MAX_LENGTH = 30;
+const int MIN_LENGTH = 1;
+const int PRIORITY = 1;
+
+typedef struct To_Do_Item * To_Do_Item_Ptr;
+
+struct To_Do_Item
+{
+    char description [MAX_DESCRIPTION + 1];
+    int priority;
+    To_Do_Item_Ptr next;
+};
+
+void load (istream &infile, To_Do_Item_Ptr &head);
+void write (ostream &outfile, To_Do_Item_Ptr head);
+To_Do_Item_Ptr create_node (const char desc[], int priority);
+void search (To_Do_Item_Ptr &head, int position, To_Do_Item_Ptr &node, bool &found);
+void insert_item (To_Do_Item_Ptr &head, To_Do_Item_Ptr node);
+void remove_item (To_Do_Item_Ptr &head, To_Do_Item_Ptr &node);
+void display_list (To_Do_Item_Ptr head, ostream &out);
+void destroy_list (To_Do_Item_Ptr &head);
+
+#endif
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat todo_list.h[Kcpp
+#include "todo_list.h"
+#include "ioutil.h"
+
+/********************************************************************************
+ * Function:  load
+
+ * Purpose:   To create a linked list in memory based off of the todo list items 
+              in the input file.
+
+ * Input:     infile - A file which handles the users input
+              head   - A pointer which keeps reference to the first item in a 
+                       linked list.
+
+ * Output:    head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Return:    Nothing.
+
+ * Details:   Takes in the priority level of an item in the todo list and
+              places it in a while loop so that until the end of file is reached
+              it will load the file onto a new node in the linked list.
+
+ *******************************************************************************/
+void load (istream &infile, To_Do_Item_Ptr &head)
+{
+    To_Do_Item_Ptr temp = NULL;
+    char description [MAX_DESCRIPTION + 1];
+    int priority;
+    
+    infile >> priority;
+
+    while (!infile.eof())
+    {
+	infile.ignore();
+	infile.getline(description, MAX_DESCRIPTION);
+	temp = create_node(description, priority);
+
+	insert_item(head, temp);
+	temp = NULL;
+	infile >> priority;
+    }
+    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  write
+
+ * Purpose:   To write the finalized todo list from the file that the user inputted
+              onto an output file.
+
+ * Input:     head - A pointer which will either be null or a reference to the 
+                     first node in the linked list.
+
+ * Output:    outfile - The file that the user will be outputting the list on to.
+
+ * Return:    Nothing.
+
+ * Details:   Creates a pointer equivalent to the head pointer and then copies
+              the priority and description of the head pointer onto an outfile
+
+ *******************************************************************************/
+void write (ostream &outfile, To_Do_Item_Ptr head)
+{
+    To_Do_Item_Ptr current;    
+
+    current = head;
+
+    while (current != NULL)
+    {
+	outfile << current->priority << ' ' << current->description << ' ';
+	outfile << endl;
+	current = current->next;
+    }	
+    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  create_node
+
+ * Purpose:   Creates a node for a new item in the todo list
+
+ * Input:     desc     - A character string about the description of a todo item.
+              priority - An integer that is allocated to a certain priority level
+                         on the todo list. 
+
+ * Output:    nextItem - A pointer that refers to the new item in the list
+
+ * Return:    A node referring to the next item in the todo list.
+
+ * Details:   Creates a node by giving a local pointer the value of the priority
+              of an item and then it copies the description of the item as well
+              to that pointer.
+
+ *******************************************************************************/
+To_Do_Item_Ptr create_node (const char desc[], int priority)
+{
+    To_Do_Item_Ptr nextItem = new To_Do_Item;
+
+    nextItem->priority = priority;
+    strcpy (nextItem->description, desc);
+    nextItem->next = NULL;
+    
+    return nextItem;
+}
+
+
+/********************************************************************************
+ * Function:  search
+
+ * Purpose:   Searches for an item on the todo list based off of the items
+              position in that list. 
+
+ * Input:     head     - A pointer which will either be null or a reference to 
+                         the first node in the linked list.
+              position - A integer which is assigned to an item based on their
+                         position in the todo list (top down).
+              
+ * Output:    found    - A boolean which determines whether or not the item
+                         in the todo list that is being searched for was found.
+              node     - A pointer which receives the position of an item in
+                         the todo list.
+
+ * Return:    Nothing.
+
+ * Details:   Searches for the desrired item in a list and upon reaching it the
+              boolean value will be assigned to true. 
+
+ *******************************************************************************/
+void search (To_Do_Item_Ptr &head, int position, To_Do_Item_Ptr &node,
+	     bool &found)
+{
+    int count = 1;
+    To_Do_Item_Ptr located_node = head;
+    
+    if (head == NULL)
+    {
+	cout << endl << "List is empty" << endl;
+    }
+    else
+    {
+	while (position != count && located_node != NULL)
+	{
+	    located_node = located_node->next;
+	    count ++;
+	}
+	if (located_node != NULL)
+	{
+	    node = located_node;
+	    found = true;
+	}
+	else
+	{
+	    found = false;
+	}
+    }
+	
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  is_list_empty
+
+ * Purpose:   To determine whether or not the todo list provided by the user is
+              empty.
+
+ * Input:     head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Output:    truth_value - A boolean that detemines if the head is null. 
+
+ * Return:    The boolean truth_value
+
+ * Details:   Uses an if-else statement to determine whether or not the head
+              pointer is null. If it is then the boolean "truth_value" will
+              evaluate to true and if it not null the boolean wil evaluate to
+              false.
+
+ *******************************************************************************/
+bool is_list_empty(To_Do_Item_Ptr &head)
+{
+// Hello, I know this function is completely uselsess/redundant but im very
+// proud of it. Please don't dock me marks for this. Thank you.
+
+    bool truth_value;
+
+    if (head == NULL)
+    {
+	truth_value = true;
+    }
+    else
+    {
+	truth_value = false;
+    }
+
+    return truth_value;
+}
+
+
+/********************************************************************************
+ * Function:  insert_item
+
+ * Purpose:   To insert a new item into the user provided todo list.
+
+ * Input:     node - A pointer which receives the position of an item in the 
+                     todo list.
+
+ * Output:    head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Return:    Nothing.
+
+ * Details:   Sorts where the new item in the function should be placed based on
+              the priority it holds compared to the priority of the previous
+              items on the list. If the list is empty it was immediately place
+              the item onto the list in the desired spot.
+
+ *******************************************************************************/
+void insert_item (To_Do_Item_Ptr &head, To_Do_Item_Ptr node)
+{
+    To_Do_Item_Ptr previous;
+    To_Do_Item_Ptr new_item;
+    
+    if (is_list_empty(head) == false)
+    {
+	previous = NULL;
+	new_item = head;
+	
+	while (new_item != NULL && node->priority <= new_item->priority)
+	{
+	    previous = new_item;
+	    new_item = new_item->next;	    
+	}
+	
+	if (previous == NULL)
+	{
+	    previous = node;
+	    head = previous;
+	    node->next = new_item;	    
+	}
+	else
+	{
+	    previous->next = node;
+	    node->next = new_item;
+	}
+    }
+    else
+    {
+	head = node;
+	head->next = NULL;
+    }
+
+    previous = NULL;
+    new_item = NULL;
+	
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  remove_item
+
+ * Purpose:   To remove a given item in the to do list provided by the user.
+
+ * Input:     node - A pointer which receives the position of an item in the 
+                     todo list.
+
+ * Output:    head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Return:    Nothing.
+
+ * Details:   Removes an item from the todo list by 
+
+ *******************************************************************************/
+void remove_item (To_Do_Item_Ptr &head, To_Do_Item_Ptr &node)
+{
+    To_Do_Item_Ptr previous = NULL;
+    To_Do_Item_Ptr current = head;
+
+    while (strcmp(current->description, node->description) != 0)
+    {
+	previous = current;
+	current = current->next;
+    }
+    
+    if (previous == NULL)
+    {
+	head = current->next;
+	delete node;
+    }
+    else
+    {
+	previous->next = current->next;
+	delete node;
+    }
+
+    node = NULL;
+    previous = NULL;
+    
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  display_list
+
+ * Purpose:   To display the items in the todo list file to the user.
+
+ * Input:     head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Output:    out - An output which will display the items in the todo list
+                    based on their priority level.
+
+ * Return:    Nothing.
+
+ * Details:   The function uses various while loops and increments up a int
+              value by 1 every time it goes through the loop until the list is
+              empty. It then also sorts the items based on their priority level
+              into high, medium, or low on the display list output to the user.
+
+ *******************************************************************************/
+void display_list (To_Do_Item_Ptr head, ostream &out)
+{
+    To_Do_Item_Ptr current;
+    int num_items = 0;
+    
+    current = head;
+
+    if (current == NULL || current->priority == 0)
+    {
+	cout << endl << "***  There are no todo items in the list  ***" << endl;
+	cout << endl;
+    }
+
+    if (current != NULL && current->priority == 3)
+    {
+	cout << endl << "High Priority: " << endl << endl;
+	while (current != NULL && current->priority == 3)
+	{
+	    num_items++;
+	    
+	    cout << num_items << ":      - ";
+	    cout << current->description << endl;
+	    current = current->next;
+	}
+    }
+    if (current != NULL && current->priority == 2)
+    {
+	cout << endl << "Medium Priority: " << endl << endl;
+	while (current != NULL && current->priority == 2)
+	{
+	    num_items++;
+	    
+	    cout << num_items << ":      - ";
+	    cout << current->description << endl;
+	    current = current->next;
+	}
+    }
+    if (current != NULL && current->priority == 1)
+    {
+	cout << endl << "Low Priority: " << endl << endl;
+	while (current != NULL && current->priority == 1)
+	{
+
+	    num_items++;
+	    
+	    cout << num_items << ":      - ";
+	    cout << current->description << endl;
+	    current = current->next;
+	}
+    }
+
+    cout << endl << endl;
+
+    return;
+}
+
+
+/********************************************************************************
+ * Function:  destroy_list
+
+ * Purpose:   To make the todo list empty.
+
+ * Input:     head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Output:    head - A pointer which will either be null or a reference to 
+                     the first node in the linked list.
+
+ * Return:    Nothing.
+
+ * Details:   By creating a new pointer the function keeps traversing the list
+              and deleting every item within that list. 
+
+ *******************************************************************************/
+void destroy_list (To_Do_Item_Ptr &head)
+{
+    To_Do_Item_Ptr temp = NULL;
+
+    while (head != NULL)
+    {
+	temp = head->next;
+	delete head;
+	head = temp;
+    }
+
+    head = NULL;
+    temp = NULL;
+    
+    return;
+}
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat todo_list.cpp[K[K[K[K[K[K[K[K[K[K[K[K[Knm[Km[K[Kmakefile 
+TARGET = myProg
+TEST = todo_test 
+MODULES = todo.o ioutil.o todo_list.o
+TESTMODULES = test_todo.o todo_list.o
+CPPFLAGS = -ansi -pedantic-errors -Wall -Wconversion
+GTFLAGS = -lgtest -lgtest_main
+
+$(TARGET): $(MODULES)
+	g++ $(MODULES) -o $(TARGET)
+	$(TARGET)
+
+$(TEST):$(TESTMODULES)
+	g++ $(GTFLAGS) $(TESTMODULES) -o $(TEST)
+	$(TEST)
+
+clean:
+	/bin/rm -f *~ *.g *.o *.gch *.gcov *.gcno *.gcda $(TARGET) $(TEST)
+
+all:	clean $(TARGET) $(TEST)
+
+main:	clean $(TARGET)
+
+test:	clean $(TEST)
+
+todo.o: todo.cpp
+	g++ $(CPPFLAGS) $(GCOVFLAGS) -c todo.cpp
+
+ioutil.o: ioutil.cpp
+	g++ $(CPPFLAGS) $(GCOVFLAGS) -c ioutil.cpp 
+
+todo_list.o: todo_list.cpp
+	g++ $(CPPFLAGS) $(GCOVFLAGS) -c todo_list.cpp
+
+test_todo.o: test_todo.cpp ioutil.h todo_list.h
+	g++ $(CPPFLAGS) $(GCOVFLAGS) -c test_todo.cpp
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat makefile [K[K[K[K[K[K[K[K[Ktest_todo.cpp 
+#include <sstream>
+#include "todo_list.h"
+#include <gtest/gtest.h>
+
+const int low_priority = 1;
+const int medium_priority = 2;
+const int high_priority = 3;
+
+TEST(test_todo, Remove_First_Item_Of_Multiple_Items)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr node = NULL;
+    To_Do_Item_Ptr temp = NULL;
+
+    temp = create_node ("first_item", '3');
+    insert_item (head, temp);
+    
+    node = temp;
+
+    temp = create_node ("second_item", '2');
+    insert_item (head, temp);
+
+    remove_item (head, node);
+    delete node;
+
+    ASSERT_EQ (head->priority, '2');
+
+    destroy_list (head);
+}
+
+TEST(test_todo, Remove_Middle_Item_Of_Multiple_Items)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr node = NULL;
+    To_Do_Item_Ptr temp = NULL;
+
+    temp = create_node ("first_item", '3');
+    insert_item (head, temp);
+    
+    temp = create_node ("second_item", '2');
+    insert_item (head, temp);
+
+    node = temp;
+
+    temp = create_node ("third_item", '1');
+    insert_item (head, temp);
+
+    remove_item (head, node);
+    delete node;
+
+    ASSERT_EQ (head->next->priority, '1');
+
+    destroy_list (head);
+}
+
+TEST(test_todo, Remove_Last_Item_Of_Multiple_Items)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr node = NULL;
+    To_Do_Item_Ptr temp = NULL;
+
+    bool match = false;
+    
+    temp = create_node ("first_item", '3');
+    insert_item (head, temp);
+    
+    temp = create_node ("second_item", '2');
+    insert_item (head, temp);
+
+    temp = create_node ("third_item", '1');
+    insert_item (head, temp);
+    
+    remove_item (head, temp);
+    delete node;
+
+    search (head, 3, temp, match);
+    
+    ASSERT_FALSE (match == true);
+
+    destroy_list (head);
+}
+
+TEST(test_todo, Remove_From_Singleton_List)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr temp = NULL;
+    To_Do_Item_Ptr node = NULL;
+
+    temp = create_node ("only item", '1');
+    insert_item (head, temp);
+
+    node = temp;
+
+    remove_item (head, node);
+    delete node;
+
+    ASSERT_TRUE (head == NULL);
+
+    destroy_list(head);
+}
+
+TEST(test_todo, Add_To_Start_Of_Filled_List)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr temp = NULL;
+
+    temp = create_node ("previous_node_middle", '2');
+    insert_item (head, temp);
+
+    temp = create_node ("new_node_high", '3');
+    insert_item (head, temp);
+
+    ASSERT_EQ (head->priority, '3');
+
+    destroy_list (head);
+}
+
+TEST(test_todo, Add_To_Middle_Of_Filled_List)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr temp = NULL; 
+
+    temp = create_node ("previous_node_high", '3');
+    insert_item (head, temp);
+
+    temp = create_node ("previous_node_low", '1');
+    insert_item (head, temp);
+    
+    temp = create_node ("new_node_middle", '2');
+    insert_item (head, temp);
+
+    ASSERT_EQ (head->next->priority, '2');
+
+    destroy_list (head);
+}
+
+TEST(test_todo, Add_To_End_Of_Filled_List)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr temp = NULL; 
+
+    temp = create_node ("previous_node_high", '3');
+    insert_item (head, temp);
+
+    temp = create_node ("previous_node_middle", '2');
+    insert_item (head, temp);
+    
+    temp = create_node ("new_node_low", '1');
+    insert_item (head, temp);
+
+    ASSERT_EQ (head->next->next->priority, '1');
+
+    destroy_list (head);
+}
+
+TEST(test_todo, Add_To_Empty_List)
+{
+    To_Do_Item_Ptr head = NULL;
+    To_Do_Item_Ptr temp = NULL;
+    To_Do_Item_Ptr node = NULL;
+
+    bool match = true;
+
+    temp = create_node ("only_item", '1');
+    insert_item (head, temp);
+
+    search (head, 1, node, match);
+
+    ASSERT_TRUE (match == true);
+
+    destroy_list (head);	
+}
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> make test_todo.cpp [K[K[K[K[K[K[K[K[K[K
+/bin/rm -f *~ *.g *.o *.gch *.gcov *.gcno *.gcda myProg todo_test 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c test_todo.cpp
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo_list.cpp
+g++ -lgtest -lgtest_main test_todo.o todo_list.o -o todo_test 
+todo_test 
+Running main() from /usr/src/mrc-redhat/BUILD/googletest-release-1.8.1/googletest/src/gtest_main.cc
+[==========] Running 8 tests from 1 test case.
+[----------] Global test environment set-up.
+[----------] 8 tests from test_todo
+[ RUN      ] test_todo.Remove_First_Item_Of_Multiple_Items
+[       OK ] test_todo.Remove_First_Item_Of_Multiple_Items (0 ms)
+[ RUN      ] test_todo.Remove_Middle_Item_Of_Multiple_Items
+[       OK ] test_todo.Remove_Middle_Item_Of_Multiple_Items (0 ms)
+[ RUN      ] test_todo.Remove_Last_Item_Of_Multiple_Items
+[       OK ] test_todo.Remove_Last_Item_Of_Multiple_Items (0 ms)
+[ RUN      ] test_todo.Remove_From_Singleton_List
+[       OK ] test_todo.Remove_From_Singleton_List (0 ms)
+[ RUN      ] test_todo.Add_To_Start_Of_Filled_List
+[       OK ] test_todo.Add_To_Start_Of_Filled_List (0 ms)
+[ RUN      ] test_todo.Add_To_Middle_Of_Filled_List
+[       OK ] test_todo.Add_To_Middle_Of_Filled_List (0 ms)
+[ RUN      ] test_todo.Add_To_End_Of_Filled_List
+[       OK ] test_todo.Add_To_End_Of_Filled_List (0 ms)
+[ RUN      ] test_todo.Add_To_Empty_List
+[       OK ] test_todo.Add_To_Empty_List (0 ms)
+[----------] 8 tests from test_todo (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 8 tests from 1 test case ran. (0 ms total)
+[  PASSED  ] 8 tests.
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> make test[K[K[K[Kmain
+/bin/rm -f *~ *.g *.o *.gch *.gcov *.gcno *.gcda myProg todo_test 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo.cpp
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c ioutil.cpp 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo_list.cpp
+g++ todo.o ioutil.o todo_list.o -o myProg
+myProg
+Please Enter Filename: lst.   ist.txt
+
+
+***  COULD NOT OPEN FILE  ***
+
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> make main
+/bin/rm -f *~ *.g *.o *.gch *.gcov *.gcno *.gcda myProg todo_test 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo.cpp
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c ioutil.cpp 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo_list.cpp
+g++ todo.o ioutil.o todo_list.o -o myProg
+myProg
+Please Enter Filename: 
+
+
+***  NO FILE NAME ENTERED  ***
+***  CREATING A NEW LIST  ***
+
+
+To-Do List Manager: 
+
+d) display list
+a) add item
+r) remove item
+u) update item priority
+q) quit
+
+choice: c x
+You chose an invalid choice, please select a valid entry - 
+
+Enter new choice: 
+INVALID - input string is < minimum length (1) -- please try again.
+Enter new choice: d
+you chose display!
+
+
+***  There are no todo items in the list  ***
+
+
+
+Enter new choice: r
+you chose remove item!
+
+Enter item number: 1
+
+List is empty
+
+*** No item found in that position  ***
+Enter item number: 
+List is empty
+Enter new choice: u
+you chose update items!
+
+
+The list is empty
+Enter new choice: a
+you chose add item!
+
+Describe new item (1-60 chars): medium
+Enter priority level (h/m/l): m
+
+
+Enter new choice: a
+you chose add item!
+
+Describe new item (1-60 chars): high
+Enter priority level (h/m/l): h
+
+
+Enter new choice: ^[[A    a
+you chose add item!
+
+Describe new item (1-60 chars): low
+Enter priority level (h/m/l): l
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - high
+
+Medium Priority: 
+
+2:      - medium
+
+Low Priority: 
+
+3:      - low
+
+
+Enter new choice: q
+
+***  QUITTING PROGRAM  ***
+
+Enter the name of an output file (1-30 characters inclusive): out1.txt
+
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat out1.txt 
+3 high 
+2 medium 
+1 low 
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> cat out1.txt [4Pmake maintestmain
+/bin/rm -f *~ *.g *.o *.gch *.gcov *.gcno *.gcda myProg todo_test 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo.cpp
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c ioutil.cpp 
+g++ -ansi -pedantic-errors -Wall -Wconversion  -c todo_list.cpp
+g++ todo.o ioutil.o todo_list.o -o myProg
+myProg
+Please Enter Filename: list2.txt
+Opening File: list2.txt
+
+
+To-Do List Manager: 
+
+d) display list
+a) add item
+r) remove item
+u) update item priority
+q) quit
+
+choice: r
+you chose remove item!
+
+Enter item number: 4
+Remove item "mow lawn" (y/n): n
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - finish COMP 1633 assignment 1
+2:      - pay overdue MasterCard bill
+
+Medium Priority: 
+
+3:      - do laundry
+4:      - mow lawn
+5:      - buy groceries
+
+Low Priority: 
+
+6:      - make dentist appointment
+
+
+Enter new choice: r r
+you chose remove item!
+
+Enter item number: 6
+Remove item "make dentist appointment" (y/n): y
+
+
+Enter new choice: r
+you chose remove item!
+
+Enter item number: 1
+Remove item "finish COMP 1633 assignment 1" (y/n): y
+
+
+Enter new choice: r
+you chose remove item!
+
+Enter item number: 3
+Remove item "mow lawn" (y/n): y
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - pay overdue MasterCard bill
+
+Medium Priority: 
+
+2:      - do laundry
+3:      - buy groceries
+
+
+Enter new choice: a
+you chose add item!
+
+Describe new item (1-60 chars): high
+Enter priority level (h/m/l): g
+
+
+*** Invalid priority level selected, please re-enter a valid entry ***
+
+Enter priority level (h/m/l): h
+
+
+Enter new choice: a
+you chose add item!
+
+Describe new item (1-60 chars): low
+Enter priority level (h/m/l): l
+
+
+Enter new choice: a
+you chose add item!
+
+Describe new item (1-60 chars): medium
+Enter priority level (h/m/l): l m
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - pay overdue MasterCard bill
+2:      - high
+
+Medium Priority: 
+
+3:      - do laundry
+4:      - buy groceries
+5:      - medium
+
+Low Priority: 
+
+6:      - low
+
+
+Enter new choice: q
+
+***  QUITTING PROGRAM  ***
+
+Enter the name of an output file (1-30 characters inclusive): out2.txt
+
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> valgrin [Kd --tol[Kop[Kl=memcheck --leak-check=full myProfg[K[Kg list2.txt
+==2325229== Memcheck, a memory error detector
+==2325229== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==2325229== Using Valgrind-3.16.0 and LibVEX; rerun with -h for copyright info
+==2325229== Command: myProg list2.txt
+==2325229== 
+Please Enter Filename: list2.txt
+Opening File: list2.txt
+
+
+To-Do List Manager: 
+
+d) display list
+a) add item
+r) remove item
+u) update item priority
+q) quit
+
+choice: u
+you chose update items!
+
+Enter item number: 4
+Reprioritize "mow lawn" (y/n): n
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - finish COMP 1633 assignment 1
+2:      - pay overdue MasterCard bill
+
+Medium Priority: 
+
+3:      - do laundry
+4:      - mow lawn
+5:      - buy groceries
+
+Low Priority: 
+
+6:      - make dentist appointment
+
+
+Enter new choice: u
+you chose update items!
+
+Enter item number: 1
+Reprioritize "finish COMP 1633 assignment 1" (y/n): y
+Enter priority level (h/m/l): l
+
+
+Enter new choice: u
+you chose update items!
+
+Enter item number: 5
+Reprioritize "make dentist appointment" (y/n): y
+Enter priority level (h/m/l): h
+
+
+Enter new choice: u
+you chose update items!
+
+Enter item number: 5
+Reprioritize "buy groceries" (y/n): y
+Enter priority level (h/m/l): h
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - pay overdue MasterCard bill
+2:      - make dentist appointment
+3:      - buy groceries
+
+Medium Priority: 
+
+4:      - do laundry
+5:      - mow lawn
+
+Low Priority: 
+
+6:      - finish COMP 1633 assignment 1
+
+
+Enter new choice: a
+you chose add item!
+
+Describe new item (1-60 chars): 
+INVALID - input string is < minimum length (1) -- please try again.
+Describe new item (1-60 chars): shovel snow
+Enter priority level (h/m/l): u
+
+
+*** Invalid priority level selected, please re-enter a valid entry ***
+
+Enter priority level (h/m/l): m
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - pay overdue MasterCard bill
+2:      - make dentist appointment
+3:      - buy groceries
+
+Medium Priority: 
+
+4:      - do laundry
+5:      - mow lawn
+6:      - shovel snow
+
+Low Priority: 
+
+7:      - finish COMP 1633 assignment 1
+
+
+Enter new choice: r
+you chose remove item!
+
+Enter item number: 0
+
+*** No item found in that position  ***
+Enter item number: r 8
+
+*** No item found in that position  ***
+Enter item number: ==2325229== Conditional jump or move depends on uninitialised value(s)
+==2325229==    at 0x402DA1: search(To_Do_Item*&, int, To_Do_Item*&, bool&) (in /users/hahma485/second_year/comp1633/assignments/assignment#2/asg2/myProg)
+==2325229==    by 0x401DD1: process_remove_item(To_Do_Item*&, char*) (in /users/hahma485/second_year/comp1633/assignments/assignment#2/asg2/myProg)
+==2325229==    by 0x401805: menu(To_Do_Item*&) (in /users/hahma485/second_year/comp1633/assignments/assignment#2/asg2/myProg)
+==2325229==    by 0x401541: main (in /users/hahma485/second_year/comp1633/assignments/assignment#2/asg2/myProg)
+==2325229== 
+Enter new choice: r
+you chose remove item!
+
+Enter item number: 4
+Remove item "do laundry" (y/n): y
+
+
+Enter new choice: d
+you chose display!
+
+
+High Priority: 
+
+1:      - pay overdue MasterCard bill
+2:      - make dentist appointment
+3:      - buy groceries
+
+Medium Priority: 
+
+4:      - mow lawn
+5:      - shovel snow
+
+Low Priority: 
+
+6:      - finish COMP 1633 assignment 1
+
+
+Enter new choice: q
+
+***  QUITTING PROGRAM  ***
+
+Enter the name of an output file (1-30 characters inclusive): todo.txt        out2 3.tx xt
+
+==2325229== 
+==2325229== HEAP SUMMARY:
+==2325229==     in use at exit: 0 bytes in 0 blocks
+==2325229==   total heap usage: 18 allocs, 18 frees, 93,040 bytes allocated
+==2325229== 
+==2325229== All heap blocks were freed -- no leaks are possible
+==2325229== 
+==2325229== Use --track-origins=yes to see where uninitialised values come from
+==2325229== For lists of detected and suppressed errors, rerun with: -s
+==2325229== ERROR SUMMARY: 8 errors from 1 contexts (suppressed: 0 from 0)
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> ls -al
+total 192
+drwxr-xr-x 2 hahma485 students.pg   279 Feb 27 23:00 [0m[01;34m.[0m
+drwxr-xr-x 3 hahma485 students.pg   275 Feb 27 22:03 [01;34m..[0m
+-rw-r--r-- 1 hahma485 students.pg  4454 Feb 27 21:25 ioutil.cpp
+-rw-r--r-- 1 hahma485 students.pg  4254 Feb 26 23:46 ioutil.h
+-rw-r--r-- 1 hahma485 students.pg  8544 Feb 27 22:52 ioutil.o
+-rw-r--r-- 1 hahma485 students.pg   129 Feb 27 22:46 list2.txt
+-rw-r--r-- 1 hahma485 students.pg   780 Feb 27 21:23 makefile
+-rwxr-xr-x 1 hahma485 students.pg 33432 Feb 27 22:52 [01;32mmyProg[0m
+-rw-r--r-- 1 hahma485 students.pg    25 Feb 27 22:52 out1.txt
+-rw-r--r-- 1 hahma485 students.pg    87 Feb 27 22:54 out2.txt
+-rw-r--r-- 1 hahma485 students.pg   136 Feb 27 23:00 out3.txt
+-rw-r--r-- 1 hahma485 students.pg  3569 Feb 26 23:54 test_todo.cpp
+-rw-r--r-- 1 hahma485 students.pg 17641 Feb 27 22:42 todo.cpp
+-rw-r--r-- 1 hahma485 students.pg 11516 Feb 27 22:05 todo_list.cpp
+-rw-r--r-- 1 hahma485 students.pg   956 Feb 26 23:45 todo_list.h
+-rw-r--r-- 1 hahma485 students.pg  8152 Feb 27 22:52 todo_list.o
+-rw-r--r-- 1 hahma485 students.pg 19184 Feb 27 22:52 todo.o
+-rw-r--r-- 1 hahma485 students.pg 40960 Feb 27 22:51 typescript
+[hahma485@ins.mtroyal.ca ~/second_year/comp1633/assignments/assignment#2/asg2> exit
+exit
+
+Script done on 2021-02-27 23:00:37-07:00
